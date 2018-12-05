@@ -1,0 +1,164 @@
+to provjera
+  ask lopovi [
+  ifelse uk-bodova = 254 [set cilj? true] [set cilj? false]
+  ifelse cilj? = true [user-message "Pobjeda lopova!" stop]
+  [ if item 0 [uk-zivota] of lopovi = 0 [user-message "Lopov je izgubio!" stop]]
+  if uk-bodova = 200 [ask bonusi2 [set hidden? false]]
+  if uk-bodova = 20 [ask bonusi [set hidden? false]]
+  ]
+end
+
+to skupi-bonus2  ;+ 1 zivot
+  ask bonusi2
+  [
+    if any? lopovi-on patch-here and item 0 [uk-bodova] of lopovi > 199
+  [
+    ask lopovi [set uk-zivota uk-zivota + 1]
+    ask bonusi2[die]
+    ]
+]
+end
+
+to skupi-bonus   ;+ 2 zivot i odnese lopova tamo di se policajci stvaraju
+  ask bonusi
+  [
+    if any? lopovi-on patch-here and item 0 [uk-bodova] of lopovi > 19
+  [
+    ask lopovi [set uk-zivota uk-zivota + 2 setxy 9 14]
+    ask bonusi-here[die]
+
+    ]
+]
+end
+
+to provjeri-uk-zivota ;ako lovci uhvate lopova, lopovu se smanjuje �ivot za 1 i vra�aju se svi na po�etne pozicije
+  ask lovci
+  [
+    if any? lopovi-on patch-here
+    [
+      ask lopovi [set uk-zivota uk-zivota - 1 setxy 10 5 ]
+      ask lovci [setxy 10 14]
+      ]
+    ]
+end
+
+to pretraga2
+ask lovci
+[
+  if item 0 [tikovi] of lopovi = ticks
+  [
+    ifelse count lovci = 1
+    [
+      ask item 0 (sort-by [[procjena-puta] of ?1 < [procjena-puta] of ?2] lovci)
+      [
+        korak provjeri-uk-zivota
+      ]
+    ]
+
+    [
+      ifelse count lovci > 4 
+      [
+        ask last (sort-by [[procjena-puta] of ?1 < [procjena-puta] of ?2] lovci)
+        [
+          die
+        ]
+      ]
+      [
+        if count lovci > 1
+        [
+          ask item 1 (sort-by [[procjena-puta] of ?1 < [procjena-puta] of ?2] lovci)
+          [
+            korak provjeri-uk-zivota
+          ]
+        ]
+      ]
+    ]
+  ]
+]
+ask lopovi[set tikovi 0]
+end
+
+;/////////////////////////////////////////////////////////////////////////
+
+to dubina
+ask lovci
+[
+  if item 0 [tikovi] of lopovi = ticks
+  [
+    ifelse count lovci = 1
+    [
+      ask last sort-on [who] lovci
+      [
+        korak provjeri-uk-zivota
+      ]
+    ]
+
+    [
+      ifelse count lovci > 4 ;bilo je > 2
+      [
+         ask last sort-on [who] lovci
+        [
+          die
+        ]
+      ]
+      [
+        if count lovci > 1
+        [
+           ask last sort-on [who] lovci
+          [
+            korak provjeri-uk-zivota
+          ]
+        ]
+      ]
+    ]
+  ]
+]
+ask lopovi[set tikovi 0]
+end
+
+;////////////////////////////////////////////////////////////////////////////
+
+to manhattan-udaljenost2 [x y]
+  set procjena-puta abs (x - item 0 [xcor] of lopovi) + abs (y - item 0 [ycor] of lopovi)
+end
+
+to korak
+  provjera
+  ask lovci[
+    ifelse count lovci < 5 
+    [
+      if [pcolor != red ] of patch-left-and-ahead 90 1
+    [
+      hatch 1[
+        lt 90 fd brzina-lovaca set color blue provjeri-uk-zivota manhattan-udaljenost2 [xcor] of lovac (who) [ycor] of lovac (who)
+        ]
+      ]
+
+      if [pcolor != red ] of patch-ahead 1
+    [
+      hatch 1 [
+        fd brzina-lovaca set color blue provjeri-uk-zivota manhattan-udaljenost2 [xcor] of lovac (who) [ycor] of lovac (who)
+        ]
+      ]
+
+      if [pcolor != red ] of patch-right-and-ahead 90 1
+    [
+      hatch 1 [
+        rt 90 fd brzina-lovaca set color blue provjeri-uk-zivota manhattan-udaljenost2 [xcor] of lovac (who) [ycor] of lovac (who)
+        ]
+      ]
+
+      ask lovci [
+        if [pcolor = red ] of patch-right-and-ahead 90 1 and [pcolor = red ] of patch-ahead 1 and [pcolor = red ] of patch-left-and-ahead 90 1
+        [
+          ask lovci-on patch-here[right 180]
+          ]
+        ]
+      die
+    ]
+  [
+    ;set MIN-OF-LOVCI min [procjena-puta] of lovci
+    ask max-one-of lovci [ procjena-puta][die]
+    ]
+ ]
+end
